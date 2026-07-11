@@ -47,10 +47,29 @@ Thumbs.db
 
 # Local storage and generated files
 storage/
+backend/storage/
+media/
+backend/media/
 uploads/
+backend/uploads/
+source_uploads/
+backend/source_uploads/
 reports/
+backend/reports/
 logs/
+backend/logs/
 *.pid
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.7z
+
+# Scan working directories
+scan_workspaces/
+backend/scan_workspaces/
+extracted_sources/
+backend/extracted_sources/
 
 # Scanner outputs
 semgrep-results.json
