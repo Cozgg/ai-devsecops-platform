@@ -1,3 +1,3 @@
 from django.db import models
 
-# Create your models here.
+# System log models will be added after the MVP scan/report flow is stable.

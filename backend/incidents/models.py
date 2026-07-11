@@ -1,3 +1,3 @@
 from django.db import models
 
-# Create your models here.
+# Incident models will be added in a later DevOps/monitoring phase.

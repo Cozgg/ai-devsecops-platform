@@ -1,10 +1,16 @@
 from django.db import models
 
 
-class BaseModel(models.Model):
-    active = models.BooleanField(default=True)
+class TimeStampedModel(models.Model):
     created_date = models.DateTimeField(auto_now_add=True)
     updated_date = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        abstract = True
+
+
+class ActiveTimeStampedModel(TimeStampedModel):
+    active = models.BooleanField(default=True)
 
     class Meta:
         abstract = True

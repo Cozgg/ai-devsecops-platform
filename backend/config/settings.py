@@ -10,22 +10,30 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import os
 from pathlib import Path
+
+import environ
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+env = environ.Env(
+    APP_DEBUG=(bool, False),
+)
+environ.Env.read_env(BASE_DIR.parent / ".env")
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure--0sr&4+^s=djgqfrc$e0!4ac_9u#v4e6d*hfe1vgnh_=klc)r5'
+SECRET_KEY = env("APP_SECRET_KEY", default="glifugawfleuqg23y4lhhbfoqhfoq9283hgf23bv412312dqwd")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = env("APP_DEBUG")
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
 
 
 # Application definition
@@ -42,18 +50,17 @@ INSTALLED_APPS = [
     'drf_yasg',
     'corsheaders',
 
-    'apps.accounts',
-    'apps.projects',
-    'apps.scans',
-    'apps.findings',
-    'apps.ai_agents',
-    'apps.knowledge_base',
-    'apps.incidents',
-    'apps.system_logs',
+    'accounts',
+    'projects',
+    'scans',
+    'findings',
+    'ai_agents',
+    'knowledge_base',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -85,12 +92,23 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+DATABASE_URL = env("DATABASE_URL", default="")
+
+if DATABASE_URL:
+    DATABASES = {
+        "default": env.db_url_config(DATABASE_URL),
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": env("POSTGRES_DB", default="ai_devsecops"),
+            "USER": env("POSTGRES_USER", default="odoo19"),
+            "PASSWORD": env("POSTGRES_PASSWORD", default="password"),
+            "HOST": env("POSTGRES_HOST", default="localhost"),
+            "PORT": env("POSTGRES_PORT", default="5432"),
+        }
+    }
 
 
 # Password validation
@@ -133,3 +151,12 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+AUTH_USER_MODEL = "accounts.User"
+
+CORS_ALLOWED_ORIGINS = env.list(
+    "CORS_ORIGINS",
+    default=["http://localhost:3000", "http://localhost:5173"],
+)
+
+STORAGE_ROOT = os.path.abspath(env("STORAGE_ROOT", default=BASE_DIR / "storage"))
