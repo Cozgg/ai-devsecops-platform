@@ -144,6 +144,21 @@ FAILED
 ```
 
 ## MVP boundary
+User upload source code
+        ↓
+Backend nhận file zip
+        ↓
+Worker giải nén source
+        ↓
+Detect ngôn ngữ/framework
+        ↓
+Chạy Semgrep/Trivy theo loại project
+        ↓
+Chuẩn hóa findings
+        ↓
+LangChain + RAG lấy tài liệu phù hợp
+        ↓
+AI Agent sinh báo cáo theo ngôn ngữ/framework
 
 The MVP should not run untrusted user applications directly. It should focus on static source code analysis and dependency scanning.
 
