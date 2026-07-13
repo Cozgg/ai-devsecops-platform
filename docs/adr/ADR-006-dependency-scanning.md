@@ -6,7 +6,7 @@
 
 **Trạng thái**: Đã chấp nhận  
 **Ngày**: 2026-07-13  
-**Người quyết định**: Nguyễn Ngọc Anh Tú - Sinh viên thực hiện  
+**Người quyết định**: Nguyễn Hữu Công - Sinh viên thực hiện  
 **Tags**: dependency, vulnerability, scanner
 
 ---
