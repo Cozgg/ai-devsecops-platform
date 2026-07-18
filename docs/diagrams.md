@@ -192,7 +192,8 @@ Sơ đồ tuần tự này mô tả use case cốt lõi: User upload source code
 Trong backend hiện tại, API upload tạo `ScanJob` với:
 
 ```text
-source_file -> lưu file upload\status -> PENDING
+source_file -> lưu file upload
+status -> PENDING
 scan_type -> SAST / DEPENDENCY / FULL
 metadata.source_file_name -> tên file upload
 ```
