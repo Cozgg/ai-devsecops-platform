@@ -50,32 +50,7 @@ Admin kế thừa User
 
 ## 4. Use Case Diagram
 
-Sơ đồ dưới đây mô phỏng lại cấu trúc use case đã vẽ trong Astah.
-
-```mermaid
-flowchart TB
-    User[User]
-    Admin[Admin]
-
-    UC03((Upload source<br/>code))
-    UC02((Quản lý project))
-    UC05((Xem report))
-    UC04((Xem trạng thái))
-    UC01((Đăng nhập))
-    UC07((Quản lý<br/>knowledge base))
-    UC06((Quản lý người<br/>dùng))
-
-    Admin --> User
-
-    User --- UC01
-    User --- UC02
-    User --- UC03
-    User --- UC04
-    User --- UC05
-
-    Admin --- UC06
-    Admin --- UC07
-```
+<img width="741" height="505" alt="image" src="https://github.com/user-attachments/assets/b18b8353-a6dc-4717-9a46-88104e0a3d6a" />
 
 Ghi chú:
 
