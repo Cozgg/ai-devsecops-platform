@@ -2,93 +2,173 @@
 
 ## Mô tả
 
-**AI DevSecOps Platform** là nền tảng hỗ trợ phân tích mã nguồn, phát hiện rủi ro bảo mật và sinh báo cáo gợi ý khắc phục bằng AI Agent.
+**AI DevSecOps Platform** là nền tảng hỗ trợ quản lý project source code, upload mã nguồn dạng `.zip`, tạo scan job bất đồng bộ và sinh báo cáo bảo mật bằng AI.
 
-Hệ thống cho phép người dùng tạo project, upload source code, tạo scan job, chạy scanner như Semgrep/Trivy hoặc npm audit, chuẩn hóa findings, tính mức độ rủi ro và sử dụng LangChain kết hợp RAG để sinh báo cáo AI dễ hiểu hơn so với raw scanner result.
-
-Mục tiêu của đồ án là xây dựng một MVP có thể chạy local bằng Docker Compose, phục vụ demo luồng DevSecOps cơ bản:
+Mục tiêu dài hạn của hệ thống là xây dựng một MVP DevSecOps có thể:
 
 ```text
 Upload source code
 → Create scan job
 → Worker xử lý bất đồng bộ
-→ Run scanner
+→ Extract source code
+→ Detect language/framework
+→ Run scanner như Semgrep/Trivy/npm audit
 → Normalize findings
 → Risk scoring
-→ RAG + LangChain
-→ AI report
+→ AI/RAG report
+→ Hiển thị kết quả trên dashboard
 ```
+
+Ở trạng thái hiện tại, dự án chưa phải là full platform hoàn chỉnh. Repository đang ở giai đoạn **backend MVP foundation**, đã có API nền tảng, upload scan job, Celery worker giả lập và scaffold AI Report.
+
+---
+
+## Trạng thái hiện tại
+
+| Hạng mục | Trạng thái | Ghi chú |
+|---|---:|---|
+| Backend Django REST Framework | ✅ Đã có | Đã có cấu trúc app chính |
+| Model nền tảng | ✅ Đã có | User, Project, ScanJob, ScanFinding, AIReport, KnowledgeDocument, KnowledgeChunk |
+| Project API | ✅ Đã có | Tạo, xem danh sách, xem chi tiết project |
+| Upload `.zip` tạo `ScanJob` | ✅ Đã có | Upload source file và tạo job trạng thái `PENDING` |
+| Redis + Celery worker | ✅ Đã có | Worker nhận job và cập nhật trạng thái |
+| Worker simulation | ✅ Đã có | `PENDING → RUNNING → COMPLETED` |
+| AI Report scaffold | ✅ Đã có | Có endpoint generate/get report, hiện dùng logic mock/deterministic |
+| Source extraction | ❌ Chưa có | Chưa giải nén zip thật |
+| Detect language/framework | ❌ Chưa có | Sẽ làm sau bước extract |
+| Semgrep/Trivy/npm audit runner | ❌ Chưa có | Chưa scan source code thật |
+| Normalize scanner result | ❌ Chưa có | Chưa sinh `ScanFinding` tự động từ scanner |
+| Risk scoring thật | ❌ Chưa có | Hiện mới có risk overview trong report mock |
+| AI API thật | ❌ Chưa có | Chưa gọi OpenAI/Gemini thật |
+| LangChain/RAG thật | ❌ Chưa có | Knowledge base mới là model nền |
+| Frontend dashboard | ❌ Chưa có | `frontend/` là hướng phát triển tiếp |
+| Docker Compose | ❌ Chưa có | Mới có ADR/kế hoạch, chưa có file `docker-compose.yml` |
+| Tests thực tế | ❌ Chưa có | Cần bổ sung sau từng feature |
 
 ---
 
 ## Công nghệ sử dụng
 
+### Đã sử dụng trong code hiện tại
+
 - **Backend**: Django REST Framework
-- **Frontend**: ReactJS
 - **Database**: PostgreSQL
 - **Message Broker**: Redis
 - **Background Worker**: Celery
-- **Scanner**: Semgrep, Trivy hoặc npm audit
-- **AI/RAG**: LangChain + RAG
-- **Container**: Docker + Docker Compose
-- **Development Workflow**: GitHub Issues, Pull Requests, ADRs
+- **Auth**: Django Auth / Custom User
+- **File Upload**: Django media storage
+- **Documentation**: Markdown, C4, ERD, UML, ADR
+
+### Dự kiến tích hợp ở các bước sau
+
+- **Scanner**: Semgrep, Trivy, npm audit
+- **AI/RAG**: OpenAI hoặc Gemini API, LangChain, RAG
+- **Frontend**: ReactJS
+- **Container**: Docker Compose
+- **Observability**: Prometheus, Grafana, Loki
+- **Deployment**: AWS EC2/Lightsail/RDS/S3 trong giai đoạn mở rộng
 
 ---
 
-## Phạm vi MVP
+## Luồng hiện tại đã chạy được
 
-MVP tập trung vào các chức năng chính:
-
-1. Quản lý người dùng cơ bản bằng Django Auth.
-2. Quản lý project source code.
-3. Upload source code dạng `.zip`.
-4. Tạo và theo dõi scan job.
-5. Xử lý scan job bất đồng bộ bằng Celery + Redis.
-6. Detect ngôn ngữ/framework cơ bản.
-7. Chạy Semgrep và dependency scanner.
-8. Chuẩn hóa scanner result thành `ScanFinding`.
-9. Tính security score và risk level.
-10. Sinh AI report bằng LangChain + RAG.
-11. Hiển thị project, scan result, findings và AI report trên frontend.
-
-Các phần được xem là mở rộng sau MVP:
-
-- Log analysis và incident analysis.
-- Prometheus, Grafana, Loki.
-- pgvector cho semantic search.
-- LangGraph cho agent workflow phức tạp.
-- AWS EC2/Lightsail deployment.
-- Kubernetes hoặc auto-scaling.
-
----
-
-## Kiến trúc
-
-Hệ thống được thiết kế theo hướng web application có xử lý bất đồng bộ:
+Hiện tại repository đã chạy được luồng bất đồng bộ tối thiểu:
 
 ```text
-React Frontend
-      ↓
-Django REST API
-      ↓
-PostgreSQL / Redis / File Storage
-      ↓
-Celery Worker
-      ↓
-Scanner Runtime + LangChain/RAG + AI Model API
+User upload source .zip
+        ↓
+Django REST API validate file
+        ↓
+Tạo ScanJob(status=PENDING)
+        ↓
+Đẩy scan_job_id vào Celery queue
+        ↓
+Celery Worker nhận task
+        ↓
+Cập nhật ScanJob(status=RUNNING)
+        ↓
+Giả lập xử lý scan
+        ↓
+Cập nhật ScanJob(status=COMPLETED)
+        ↓
+Ghi metadata.worker vào database
 ```
 
-Các sơ đồ kiến trúc và mô hình hóa hệ thống nằm trong thư mục `docs/`:
+Ví dụ metadata sau khi worker simulation chạy thành công:
+
+```json
+{
+  "source_file_name": "test-source.zip",
+  "worker": {
+    "processed": true,
+    "mode": "simulation",
+    "message": "Celery worker processed this scan job successfully."
+  }
+}
+```
+
+---
+
+## Luồng AI Report hiện tại
+
+AI Report hiện mới là scaffold để chuẩn bị cho bước gọi AI API thật.
+
+Luồng hiện tại:
+
+```text
+ScanJob
+↓
+Lấy ScanFinding nếu đã có
+↓
+Nếu chưa có ScanFinding thì dùng mock findings
+↓
+Build report_json bằng logic backend
+↓
+Lưu AIReport
+```
+
+Endpoint hiện có:
+
+```text
+POST /api/ai-reports/scans/<scan_job_id>/generate/
+GET  /api/ai-reports/scans/<scan_job_id>/
+```
+
+Ghi chú: phần này **chưa gọi OpenAI/Gemini API thật** và **chưa dùng LangChain/RAG thật**.
+
+---
+
+## Kiến trúc tổng quan
+
+```text
+Client / API Consumer
+        ↓
+Django REST API
+        ↓
+PostgreSQL
+        ↓
+Redis Queue
+        ↓
+Celery Worker
+        ↓
+Scanner Services / AI Report Services
+```
+
+Ở hiện tại, `Scanner Services` mới dừng ở mức simulation. Các bước source extraction, Semgrep/Trivy/npm audit và AI/RAG thật sẽ được bổ sung dần trong các branch tiếp theo.
+
+Tài liệu kiến trúc và mô hình hóa nằm trong thư mục `docs/`:
 
 - [C4 Architecture](docs/C4.md)
 - [Database Design](docs/database-design.md)
 - [Use Case](docs/use-case.md)
 - [System Diagrams](docs/diagrams.md)
 - [Architecture Decision Records](docs/adr/)
+- [Development Plan](docs/development-plan.md)
+- [GitHub Workflow](docs/github-workflow.md)
 
 ---
 
-## Cấu trúc thư mục dự kiến
+## Cấu trúc thư mục hiện tại
 
 ```text
 ai-devsecops-platform/
@@ -104,7 +184,6 @@ ai-devsecops-platform/
 │   ├── manage.py
 │   └── requirements.txt
 │
-├── frontend/
 ├── docs/
 │   ├── adr/
 │   ├── C4.md
@@ -112,161 +191,237 @@ ai-devsecops-platform/
 │   ├── use-case.md
 │   └── diagrams.md
 │
-├── samples/
-├── docker-compose.yml
+├── frontend/          # Dự kiến phát triển sau
+├── worker/            # Dự kiến nếu tách worker riêng
+├── samples/           # Dự kiến chứa sample source code
 ├── .env.example
 └── README.md
 ```
 
 ---
 
-## Cài đặt và chạy
+## Cài đặt và chạy local
 
-### Yêu cầu hệ thống
-
-- Git
-- Python 3.11+
-- Node.js 18+
-- PostgreSQL
-- Redis
-- Docker & Docker Compose, khuyến khích cho giai đoạn demo
-
----
-
-### Cách 1: Chạy local trong giai đoạn phát triển
-
-#### 1. Clone project
+### 1. Clone project
 
 ```bash
 git clone https://github.com/Cozgg/ai-devsecops-platform.git
 cd ai-devsecops-platform
 ```
 
-#### 2. Cấu hình backend
+### 2. Tạo file môi trường
+
+```bash
+cp .env.example .env
+```
+
+Nếu chạy Redis bằng Docker riêng trên máy local, nên dùng:
+
+```env
+CELERY_BROKER_URL=redis://localhost:6379/0
+CELERY_RESULT_BACKEND=redis://localhost:6379/1
+```
+
+Nếu sau này chạy toàn bộ bằng Docker Compose, hostname Redis có thể đổi thành `redis`.
+
+### 3. Cài backend
 
 ```bash
 cd backend
 python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
+```
+
+Windows:
+
+```bash
+.venv\Scripts\activate
+```
+
+Linux/macOS:
+
+```bash
+source .venv/bin/activate
+```
+
+Cài dependencies:
+
+```bash
 pip install -r requirements.txt
 ```
 
-Tạo file `.env` từ `.env.example` nếu đã có:
-
-```bash
-cp ../.env.example ../.env
-```
-
-#### 3. Chạy migration
+### 4. Chạy database migration
 
 ```bash
 python manage.py check
-python manage.py makemigrations --check --dry-run
 python manage.py migrate
 python manage.py createsuperuser
 ```
 
-#### 4. Chạy backend
+### 5. Chạy Redis bằng Docker
+
+Vì hiện chưa có `docker-compose.yml`, có thể chạy Redis riêng:
 
 ```bash
+docker run --name ai-devsecops-redis -p 6379:6379 -d redis:7
+```
+
+Nếu container đã tồn tại:
+
+```bash
+docker start ai-devsecops-redis
+```
+
+### 6. Chạy Django server
+
+Terminal 1:
+
+```bash
+cd backend
 python manage.py runserver
 ```
 
-Backend mặc định chạy tại:
+Backend chạy tại:
 
 ```text
-http://localhost:8000
+http://127.0.0.1:8000/
+http://127.0.0.1:8000/admin/
 ```
 
-#### 5. Chạy frontend
+### 7. Chạy Celery worker
+
+Terminal 2:
+
+Windows:
 
 ```bash
-cd ../frontend
-npm install
-npm run dev
+cd backend
+celery -A config worker -l info -P solo
 ```
 
-Frontend mặc định chạy tại:
-
-```text
-http://localhost:5173
-```
-
----
-
-### Cách 2: Chạy bằng Docker Compose
-
-Docker Compose sẽ được sử dụng ở giai đoạn MVP/demo để chạy nhiều service cùng lúc:
-
-```text
-backend
-frontend
-postgres
-redis
-celery_worker
-```
-
-Lệnh dự kiến:
+Linux/macOS:
 
 ```bash
-docker compose up --build
+cd backend
+celery -A config worker -l info
 ```
 
-> Ghi chú: Docker Compose nên được hoàn thiện sau khi backend API và Celery worker chạy ổn ở môi trường local.
+Nếu worker chạy đúng, log sẽ có task:
+
+```text
+[tasks]
+  . scans.tasks.run_scan_job
+```
 
 ---
 
-## Demo chức năng dự kiến
+## API chính hiện có
 
-Các chức năng cần có ảnh chụp hoặc video demo khi hoàn thiện:
+### Projects
 
-### 1. Quản lý Project
+```text
+GET    /api/projects/
+POST   /api/projects/
+GET    /api/projects/<id>/
+PUT    /api/projects/<id>/
+PATCH  /api/projects/<id>/
+DELETE /api/projects/<id>/
+```
 
-User có thể tạo project source code, xem danh sách project và xem chi tiết project.
+### Scans
 
-### 2. Upload Source Code
+```text
+GET  /api/scans/
+POST /api/scans/
+GET  /api/scans/<id>/
+GET  /api/scans/<id>/status/
+```
 
-User upload source code dạng `.zip`, hệ thống tạo `ScanJob` với trạng thái `PENDING`.
+Upload scan job dạng multipart form:
 
-### 3. Scan Job Processing
+```text
+project_id=<project_id>
+scan_type=FULL
+source_file=@your-source.zip
+```
 
-Celery Worker xử lý scan job, giải nén source code, detect ngôn ngữ/framework, chạy scanner và cập nhật trạng thái job.
+### AI Reports
 
-### 4. Findings Dashboard
-
-User xem danh sách findings theo severity, file path, line number và scanner name.
-
-### 5. AI Report
-
-User xem báo cáo AI gồm summary, risk overview và recommendation.
-
-### 6. Knowledge Base
-
-Admin quản lý tài liệu bảo mật phục vụ RAG như OWASP, CWE, scanner docs hoặc ghi chú nội bộ.
-
----
-
-## Tài liệu
-
-- [C4 Architecture](docs/C4.md)
-- [Database Design](docs/database-design.md)
-- [Use Case](docs/use-case.md)
-- [System Diagrams](docs/diagrams.md)
-- [ADRs](docs/adr/)
-- [Development Plan](docs/development-plan.md)
-- [GitHub Workflow](docs/github-workflow.md)
+```text
+POST /api/ai-reports/scans/<scan_job_id>/generate/
+GET  /api/ai-reports/scans/<scan_job_id>/
+```
 
 ---
 
-## Quy trình phát triển
+## Test nhanh flow Celery worker
 
-1. Chọn issue từ GitHub Issues.
-2. Tạo branch mới từ `main`.
-3. Code hoặc viết tài liệu theo phạm vi của issue.
-4. Mở Pull Request.
-5. Review, test và merge.
+Sau khi backend, Redis và Celery worker đang chạy:
 
-Quy ước đặt tên branch:
+1. Tạo project qua API hoặc Django Admin.
+2. Tạo file `.zip` bất kỳ để test.
+3. Upload file qua `/api/scans/`.
+4. Lấy `scan_job_id` từ response.
+5. Gọi `/api/scans/<scan_job_id>/status/` để kiểm tra trạng thái.
+
+Kết quả mong muốn:
+
+```text
+PENDING
+→ RUNNING
+→ COMPLETED
+```
+
+Trong database, `ScanJob.metadata` sẽ có thông tin worker simulation.
+
+---
+
+## Roadmap phát triển tiếp theo
+
+Thứ tự phát triển đề xuất:
+
+```text
+1. Source extraction
+   Worker đọc scan_job.source_file và giải nén zip an toàn.
+
+2. Detect language/framework
+   Xác định stack cơ bản từ file đã giải nén.
+
+3. Semgrep runner
+   Chạy Semgrep trên source đã giải nén.
+
+4. Normalize scanner result
+   Chuyển raw scanner JSON thành ScanFinding.
+
+5. Risk scoring
+   Tính severity_count, total_findings, risk_level, security_score.
+
+6. AI API thật
+   Gọi OpenAI/Gemini để sinh AIReport từ ScanFinding thật.
+
+7. Knowledge base / RAG
+   Dùng KnowledgeDocument và KnowledgeChunk để bổ sung context cho AI report.
+
+8. Frontend dashboard
+   Hiển thị project, scan status, findings và AI report.
+
+9. Docker Compose
+   Gom backend, postgres, redis, celery worker và frontend vào một môi trường demo.
+
+10. Tests
+   Bổ sung unit test và API test cho từng module chính.
+```
+
+---
+
+## Nguyên tắc phát triển
+
+- Mỗi feature nên làm trên một branch riêng.
+- Mỗi branch chỉ nên giải quyết một lát cắt nhỏ.
+- Không merge code chưa chạy được vào `main`.
+- Không commit file runtime như `media/`, `storage/`, `.run-logs/`, file `.zip` test hoặc `.env` thật.
+- AI chỉ dùng để sinh report sau khi đã có dữ liệu đầu vào đáng tin cậy từ scanner hoặc findings đã kiểm chứng.
+
+Quy ước branch:
 
 ```text
 feature/short-feature-name
@@ -278,18 +433,31 @@ fix/short-bug-name
 Ví dụ:
 
 ```text
-docs/project-documentation-structure
-feature/project-api
-feature/scan-upload-api
+feature/source-extraction
+feature/semgrep-runner
+feature/ai-api-report
+feature/frontend-dashboard
+docs/update-readme-current-status
 ```
 
 ---
 
-## Trạng thái hiện tại
+## Ghi chú bảo mật
 
-Dự án đang ở giai đoạn xây dựng MVP:
+- Không commit `.env` thật.
+- Không commit API key, password, token hoặc secret.
+- Không gửi toàn bộ source code nhạy cảm lên AI API nếu không cần thiết.
+- AI Report chỉ là lớp giải thích và gợi ý, không thay thế scanner.
+- Scanner result và findings trong database mới là dữ liệu nền để phân tích bảo mật.
 
-- Đã khởi tạo cấu trúc backend cơ bản.
-- Đã có model MVP cho User, Project, ScanJob, ScanFinding, AIReport, KnowledgeDocument và KnowledgeChunk.
-- Đã có C4 architecture và ADR cho các quyết định kỹ thuật chính.
-- Bước tiếp theo là hoàn thiện database design, use case, API cơ bản cho Project và ScanJob upload.
+---
+
+## Tài liệu liên quan
+
+- [C4 Architecture](docs/C4.md)
+- [Database Design](docs/database-design.md)
+- [Use Case](docs/use-case.md)
+- [System Diagrams](docs/diagrams.md)
+- [ADRs](docs/adr/)
+- [Development Plan](docs/development-plan.md)
+- [GitHub Workflow](docs/github-workflow.md)
