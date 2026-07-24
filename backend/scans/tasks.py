@@ -8,7 +8,7 @@ from scans.models import ScanJob
 
 
 @shared_task
-def run_scan_job(scan_job_id):
+def process_scan_job(scan_job_id):
     scan_job = ScanJob.objects.get(id=scan_job_id)
 
     try:
