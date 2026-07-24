@@ -1,39 +1,30 @@
 
-import time
-
 from celery import shared_task
-from django.utils import timezone
 
 from scans.models import ScanJob
+from scans.services.scan_job_state import ScanJobStateMachine
+from scans.services.source_extractor import extract_source_archive_for_scan
 
 
 @shared_task
-def process_scan_job(scan_job_id):
+def run_scan_job(scan_job_id):
     scan_job = ScanJob.objects.get(id=scan_job_id)
+    state_machine = ScanJobStateMachine(scan_job)
+    state_machine.start()
 
     try:
-        scan_job.status = ScanJob.Status.RUNNING
-        scan_job.started_at = timezone.now()
-        scan_job.error_message = None
-        scan_job.save(update_fields=["status", "started_at", "error_message", "updated_date"])
-
-        time.sleep(5)
+        extraction_result = extract_source_archive_for_scan(scan_job)
 
         metadata = dict(scan_job.metadata or {})
         metadata["worker"] = {
             "processed": True,
-            "mode": "simulation",
-            "message": "Celery worker processed this scan job successfully.",
+            "mode": "source_extraction",
+            "message": "Celery worker extracted source code successfully.",
         }
+        metadata["source_extraction"] = extraction_result
 
-        scan_job.metadata = metadata
-        scan_job.status = ScanJob.Status.COMPLETED
-        scan_job.finished_at = timezone.now()
-        scan_job.save(update_fields=["metadata", "status", "finished_at", "updated_date"])
+        state_machine.complete(metadata)
 
     except Exception as exc:
-        scan_job.status = ScanJob.Status.FAILED
-        scan_job.error_message = str(exc)
-        scan_job.finished_at = timezone.now()
-        scan_job.save(update_fields=["status", "error_message", "finished_at", "updated_date"])
+        state_machine.fail(str(exc))
         raise
