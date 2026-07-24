@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from projects.models import Project
 from scans.models import ScanJob
-from scans.tasks import process_scan_job
+from scans.tasks import run_scan_job
 
 
 class ScanJobSerializer(serializers.ModelSerializer):
@@ -69,7 +69,7 @@ class ScanJobSerializer(serializers.ModelSerializer):
         validated_data["status"] = ScanJob.Status.PENDING
 
         scan_job = super().create(validated_data)
-        process_scan_job.delay(scan_job.id)
+        run_scan_job.delay(scan_job.id)
 
         return scan_job
 
