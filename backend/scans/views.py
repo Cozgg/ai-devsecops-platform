@@ -18,7 +18,7 @@ class ScanJobViewSet(viewsets.ModelViewSet):
         ).select_related("project", "created_by").order_by("-created_date")
 
     @action(detail=True, methods=("get",), url_path="status")
-    def status(self, request, pk=None):
+    def get_scan_job_status(self, request, pk=None):
         scan_job = self.get_object()
         serializer = ScanJobStatusSerializer(scan_job)
         return Response(serializer.data)
